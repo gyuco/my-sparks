@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -23,6 +24,8 @@ export default function SparkDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadSpark = useCallback(async () => {
     if (!id) return;
@@ -70,30 +73,20 @@ export default function SparkDetailScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      'Elimina Spark',
-      'Sei sicuro di voler eliminare questa spark? Questa azione non può essere annullata.',
-      [
-        {
-          text: 'Annulla',
-          style: 'cancel',
-        },
-        {
-          text: 'Elimina',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await sparksService.deleteSpark(id as string);
-              // Torna indietro immediatamente, la lista si aggiornerà automaticamente
-              router.back();
-            } catch (error) {
-              console.error('Errore nell\'eliminazione della spark:', error);
-              Alert.alert('Errore', 'Impossibile eliminare la spark');
-            }
-          },
-        },
-      ]
-    );
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await sparksService.deleteSpark(id as string);
+      setShowDeleteModal(false);
+      router.back();
+    } catch (error) {
+      console.error('Errore nell\'eliminazione della spark:', error);
+      Alert.alert('Errore', 'Impossibile eliminare la spark');
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -132,12 +125,14 @@ export default function SparkDetailScreen() {
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => setIsEditing(true)}
+                activeOpacity={0.7}
               >
                 <Ionicons name="create-outline" size={24} color="#00D4FF" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.iconButton, styles.deleteButton]}
                 onPress={handleDelete}
+                activeOpacity={0.7}
               >
                 <Ionicons name="trash-outline" size={24} color="#FF4444" />
               </TouchableOpacity>
@@ -216,6 +211,44 @@ export default function SparkDetailScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal di conferma eliminazione */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Ionicons name="warning" size={48} color="#FF4444" style={styles.modalIcon} />
+            <ThemedText style={styles.modalTitle}>Elimina Spark</ThemedText>
+            <ThemedText style={styles.modalMessage}>
+              Sei sicuro di voler eliminare questa spark? Questa azione non può essere annullata.
+            </ThemedText>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                <ThemedText style={styles.modalCancelText}>Annulla</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalDeleteButton}
+                onPress={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <ThemedText style={styles.modalDeleteText}>Elimina</ThemedText>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -255,11 +288,13 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 8,
+    zIndex: 10,
   },
   deleteButton: {
     borderWidth: 2,
     borderColor: '#FF4444',
     borderRadius: 8,
+    backgroundColor: 'rgba(255, 68, 68, 0.1)',
   },
   scrollView: {
     flex: 1,
@@ -348,5 +383,65 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1A2942',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#8B92A0',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: '#2A3952',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  modalDeleteButton: {
+    flex: 1,
+    backgroundColor: '#FF4444',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalDeleteText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
 });
