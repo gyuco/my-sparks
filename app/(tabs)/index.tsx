@@ -1,27 +1,49 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useAuth } from '@/hooks/use-auth';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
-  const handleLogout = () => {
-    // Torna alla pagina di login
-    router.replace('/login');
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isLoading, isAuthenticated]);
+
+  const handleLogout = async () => {
+    await logout();
   };
+
+  if (isLoading) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#00D4FF" />
+        </View>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Image 
-            source={{ uri: 'https://i.pravatar.cc/150?img=33' }}
-            style={styles.avatar}
-          />
+          <View style={styles.avatarPlaceholder}>
+            <ThemedText style={styles.avatarText}>
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            </ThemedText>
+          </View>
           <View style={styles.welcomeContainer}>
             <ThemedText style={styles.welcomeText}>Welcome Back</ThemedText>
-            <ThemedText style={styles.userName}>Guest User</ThemedText>
+            <ThemedText style={styles.userName}>
+              {user?.name || 'User'}
+            </ThemedText>
           </View>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -90,6 +112,25 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginRight: 16,
+  },
+  avatarPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#00D4FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  avatarText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   welcomeContainer: {
     justifyContent: 'center',

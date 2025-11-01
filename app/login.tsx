@@ -1,26 +1,50 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { authService } from '@/lib/appwrite-service';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLogin = () => {
-    // Logica di login
-    console.log('Login:', { email, password });
-    // Usa replace invece di push per evitare di tornare indietro al login
-    router.replace('/(tabs)');
+  const handleLogin = async () => {
+    setErrorMessage('');
+
+    if (!email || !password) {
+      setErrorMessage('Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authService.login(email, password);
+      // Login riuscito, naviga alla home
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const message =
+        error.message || 'Invalid email or password. Please try again.';
+      setErrorMessage(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp = () => {
+    router.push('/signup');
   };
 
   return (
@@ -46,22 +70,34 @@ export default function LoginScreen() {
 
         {/* Form di Login */}
         <View style={styles.formContainer}>
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <ThemedText style={styles.errorText}>⚠️ {errorMessage}</ThemedText>
+            </View>
+          ) : null}
+
           <TextInput
-            style={styles.input}
+            style={[styles.input, errorMessage ? styles.inputError : null]}
             placeholder="Email"
             placeholderTextColor="#666"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setErrorMessage('');
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, errorMessage ? styles.inputError : null]}
             placeholder="Password"
             placeholderTextColor="#666"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setErrorMessage('');
+            }}
             secureTextEntry
           />
 
@@ -77,6 +113,7 @@ export default function LoginScreen() {
           style={styles.enterButton}
           onPress={handleLogin}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
           <LinearGradient
             colors={['#00D4FF', '#0080FF']}
@@ -84,7 +121,11 @@ export default function LoginScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.gradient}
           >
-            <ThemedText style={styles.enterButtonText}>Enter</ThemedText>
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <ThemedText style={styles.enterButtonText}>Enter</ThemedText>
+            )}
           </LinearGradient>
         </TouchableOpacity>
 
@@ -93,7 +134,7 @@ export default function LoginScreen() {
           <ThemedText style={styles.signupText}>
             Don&apos;t have an account?{' '}
           </ThemedText>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleSignUp}>
             <ThemedText style={styles.signupLink}>Sign up</ThemedText>
           </TouchableOpacity>
         </View>
@@ -154,6 +195,20 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     marginBottom: 30,
   },
+  errorContainer: {
+    backgroundColor: '#FF4444',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FF6666',
+  },
+  errorText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
   input: {
     backgroundColor: '#1A2942',
     borderRadius: 12,
@@ -163,6 +218,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#2A4A6F',
+  },
+  inputError: {
+    borderColor: '#FF4444',
+    borderWidth: 2,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
