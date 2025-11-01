@@ -1,0 +1,17 @@
+{
+  "name": "langchain-fn",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "LangChain function with OpenRouter streaming support",
+  "dependencies": {
+    "@langchain/openai": "^0.3.14",
+    "langchain": "^0.3.7"
+  }
+}

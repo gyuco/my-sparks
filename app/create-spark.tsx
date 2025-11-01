@@ -1,3 +1,4 @@
+import { AIStreamingIndicator } from '@/components/ai-streaming-indicator';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/use-auth';
@@ -36,22 +37,30 @@ export default function CreateSparkScreen() {
     try {
       console.log('Setting isGenerating to true');
       setIsGenerating(true);
+      setContent(''); // Reset del contenuto
       
       // Crea un prompt per l'IA
       const prompt = `Scrivi un contenuto creativo e coinvolgente per una "spark" (idea innovativa) con il seguente titolo: "${title}". Il contenuto deve essere ispirazionale, conciso e stimolare la creatività. Massimo 200 parole.`;
       
       console.log('Prompt creato:', prompt);
-      console.log('Chiamando aiService.generateText...');
+      console.log('Chiamando aiService.generateText con streaming...');
       
-      // Chiama la funzione Appwrite per generare il testo
-      const generatedText = await aiService.generateText(prompt, 300);
+      // Chiama la funzione OpenRouter con streaming
+      const generatedText = await aiService.generateText(
+        prompt,
+        'openai/gpt-3.5-turbo', // Modello
+        0.7, // Temperature
+        (chunk) => {
+          // Callback per aggiornamenti in tempo reale
+          setContent((prev) => prev + chunk);
+        }
+      );
       
-      console.log('Testo generato ricevuto:', generatedText);
-      setContent(generatedText);
-      console.log('Contenuto impostato');
+      console.log('Testo generato completo:', generatedText);
     } catch (error) {
       console.error('=== ERRORE nella generazione ===', error);
       Alert.alert('Errore', 'Impossibile generare il contenuto. Riprova.');
+      setContent(''); // Reset in caso di errore
     } finally {
       console.log('Setting isGenerating to false');
       setIsGenerating(false);
@@ -148,6 +157,10 @@ export default function CreateSparkScreen() {
                 )}
               </TouchableOpacity>
             </View>
+            
+            {/* Indicatore streaming */}
+            <AIStreamingIndicator isStreaming={isGenerating} />
+            
             <TextInput
               style={styles.contentInput}
               placeholder="Scrivi la tua idea..."

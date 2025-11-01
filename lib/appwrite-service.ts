@@ -61,7 +61,7 @@ export const authService = {
     try {
       const user = await this.getCurrentUser();
       return !!user;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
@@ -83,9 +83,9 @@ export const databaseService = {
         data
       );
       return response;
-    } catch (error) {
-      console.error('Errore createDocument:', error);
-      throw error;
+    } catch (err) {
+      console.error('Errore createDocument:', err);
+      throw err;
     }
   },
 
@@ -237,17 +237,23 @@ export const sparksService = {
 
 // Servizi per l'IA
 export const aiService = {
-  // Genera testo con IA
-  async generateText(prompt: string, maxTokens: number = 200) {
+  // Genera testo con IA usando OpenRouter con streaming
+  async generateText(
+    prompt: string,
+    model: string = 'openai/gpt-3.5-turbo',
+    temperature: number = 0.7,
+    onChunk?: (text: string) => void
+  ) {
     try {
       const body = {
         prompt,
-        max_new_tokens: maxTokens,
+        model,
+        temperature,
       };
 
       const functionUrl = `https://${appwriteConfig.textGenerationFunctionId}.nyc.appwrite.run/`;
 
-      console.log('Chiamata funzione IA:', {
+      console.log('Chiamata funzione OpenRouter:', {
         url: functionUrl,
         body,
       });
@@ -269,15 +275,47 @@ export const aiService = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();
-
-      console.log('Risposta completa:', result);
-
-      if (!result.ok) {
-        throw new Error(result.error || 'Errore nella generazione del testo');
+      // Gestione dello stream
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Stream non disponibile');
       }
 
-      return result.completion;
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.content) {
+                fullText += data.content;
+                // Callback per aggiornamenti in tempo reale
+                if (onChunk) {
+                  onChunk(data.content);
+                }
+              }
+
+              if (data.done) {
+                console.log('Stream completato');
+              }
+            } catch {
+              // Ignora errori di parsing per linee incomplete
+            }
+          }
+        }
+      }
+
+      console.log('Testo completo generato:', fullText);
+      return fullText;
     } catch (error: any) {
       console.error('Errore generateText:', {
         message: error.message,
