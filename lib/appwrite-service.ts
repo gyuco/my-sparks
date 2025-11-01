@@ -250,15 +250,18 @@ export const aiService = {
         temperature,
       });
 
-      console.log('Chiamata funzione OpenRouter:', {
-        functionId: appwriteConfig.textGenerationFunctionId,
+      // ID della funzione
+      const functionId = 'langchain';
+
+      console.log('Chiamata funzione IA:', {
+        functionId,
         model,
         temperature,
       });
 
       // Usa l'SDK di Appwrite per chiamare la funzione
       const execution = await functions.createExecution(
-        appwriteConfig.textGenerationFunctionId,
+        functionId,
         body,
         false // async = false per ottenere la risposta sincrona
       );
@@ -286,7 +289,7 @@ export const aiService = {
     } catch (error: any) {
       console.error('Errore generateText:', {
         message: error.message,
-        functionId: appwriteConfig.textGenerationFunctionId,
+        functionId: 'langchain',
       });
       throw error;
     }
