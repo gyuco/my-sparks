@@ -1,19 +1,73 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/use-auth';
+import { sparksService } from '@/lib/appwrite-service';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+interface Spark {
+  $id: string;
+  title: string;
+  content: string;
+  user_id: string;
+  $createdAt: string;
+  $updatedAt: string;
+}
 
 export default function HomeScreen() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const [sparks, setSparks] = useState<Spark[]>([]);
+  const [loadingSparks, setLoadingSparks] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
     }
   }, [isLoading, isAuthenticated]);
+
+  const loadSparks = useCallback(async (isRefreshing = false) => {
+    if (!user) return;
+    
+    try {
+      if (isRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoadingSparks(true);
+      }
+      const userSparks = await sparksService.getUserSparks(user.$id);
+      setSparks(userSparks as unknown as Spark[]);
+    } catch (error) {
+      console.error('Errore nel caricamento delle sparks:', error);
+    } finally {
+      if (isRefreshing) {
+        setRefreshing(false);
+      } else {
+        setLoadingSparks(false);
+      }
+    }
+  }, [user]);
+
+  const onRefresh = useCallback(() => {
+    loadSparks(true);
+  }, [loadSparks]);
+
+  useEffect(() => {
+    if (user) {
+      loadSparks();
+    }
+  }, [user, loadSparks]);
+
+  // Ricarica le sparks quando la schermata torna in focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadSparks();
+      }
+    }, [user, loadSparks])
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -54,19 +108,62 @@ export default function HomeScreen() {
       {/* My Sparks Section */}
       <View style={styles.sparksHeader}>
         <ThemedText style={styles.sparksTitle}>My Sparks</ThemedText>
-        <ThemedText style={styles.notesCount}>0 notes</ThemedText>
-      </View>
-
-      {/* Empty State */}
-      <View style={styles.emptyState}>
-        <View style={styles.emptyIcon}>
-          <ThemedText style={styles.emptyIconText}>✨</ThemedText>
-        </View>
-        <ThemedText style={styles.emptyTitle}>No Sparks Yet</ThemedText>
-        <ThemedText style={styles.emptySubtitle}>
-          Tap the &apos;+&apos; button to add your first idea.
+        <ThemedText style={styles.notesCount}>
+          {sparks.length} {sparks.length === 1 ? 'nota' : 'note'}
         </ThemedText>
       </View>
+
+      {/* Sparks List or Empty State */}
+      {loadingSparks ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#00D4FF" />
+        </View>
+      ) : sparks.length === 0 ? (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyIcon}>
+            <ThemedText style={styles.emptyIconText}>✨</ThemedText>
+          </View>
+          <ThemedText style={styles.emptyTitle}>Nessuna Spark</ThemedText>
+          <ThemedText style={styles.emptySubtitle}>
+            Tocca il pulsante &apos;+&apos; per aggiungere la tua prima idea.
+          </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          data={sparks}
+          keyExtractor={(item: Spark) => item.$id}
+          contentContainerStyle={styles.sparksList}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#00D4FF"
+              colors={['#00D4FF']}
+            />
+          }
+          renderItem={({ item }: { item: Spark }) => (
+            <TouchableOpacity
+              style={styles.sparkCard}
+              onPress={() => router.push(`/spark/${item.$id}`)}
+            >
+              <View style={styles.sparkHeader}>
+                <ThemedText style={styles.sparkTitle} numberOfLines={1}>
+                  {item.title}
+                </ThemedText>
+                <ThemedText style={styles.sparkDate}>
+                  {new Date(item.$createdAt).toLocaleDateString('it-IT', {
+                    day: '2-digit',
+                    month: 'short',
+                  })}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.sparkContent} numberOfLines={3}>
+                {item.content}
+              </ThemedText>
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -75,7 +172,10 @@ export default function HomeScreen() {
           <ThemedText style={styles.navTextActive}>Home</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/create-spark')}
+        >
           <View style={styles.addButtonCircle}>
             <Ionicons name="add" size={32} color="#FFFFFF" />
           </View>
@@ -192,6 +292,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B92A0',
     textAlign: 'center',
+  },
+  sparksList: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  sparkCard: {
+    backgroundColor: '#1A2942',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#2A3952',
+  },
+  sparkHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sparkTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    flex: 1,
+    marginRight: 8,
+  },
+  sparkDate: {
+    fontSize: 12,
+    color: '#8B92A0',
+  },
+  sparkContent: {
+    fontSize: 14,
+    color: '#B0B8C4',
+    lineHeight: 20,
   },
   bottomNav: {
     flexDirection: 'row',

@@ -153,3 +153,84 @@ export const databaseService = {
     }
   },
 };
+
+// Servizi per le Sparks
+export const sparksService = {
+  // Crea una nuova spark
+  async createSpark(title: string, content: string, userId: string) {
+    try {
+      const response = await databaseService.createDocument(
+        appwriteConfig.sparksCollectionId,
+        {
+          title,
+          content,
+          user_id: userId,
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error("Errore createSpark:", error);
+      throw error;
+    }
+  },
+
+  // Ottieni una singola spark
+  async getSpark(sparkId: string) {
+    try {
+      const response = await databaseService.getDocument(
+        appwriteConfig.sparksCollectionId,
+        sparkId
+      );
+      return response;
+    } catch (error) {
+      console.error("Errore getSpark:", error);
+      throw error;
+    }
+  },
+
+  // Ottieni tutte le sparks dell'utente
+  async getUserSparks(userId: string) {
+    try {
+      const { Query } = await import("react-native-appwrite");
+      const response = await databaseService.listDocuments(
+        appwriteConfig.sparksCollectionId,
+        [Query.equal("user_id", userId), Query.orderDesc("$createdAt")]
+      );
+      return response.documents;
+    } catch (error) {
+      console.error("Errore getUserSparks:", error);
+      throw error;
+    }
+  },
+
+  // Aggiorna una spark
+  async updateSpark(sparkId: string, title: string, content: string) {
+    try {
+      const response = await databaseService.updateDocument(
+        appwriteConfig.sparksCollectionId,
+        sparkId,
+        {
+          title,
+          content,
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error("Errore updateSpark:", error);
+      throw error;
+    }
+  },
+
+  // Elimina una spark
+  async deleteSpark(sparkId: string) {
+    try {
+      await databaseService.deleteDocument(
+        appwriteConfig.sparksCollectionId,
+        sparkId
+      );
+    } catch (error) {
+      console.error("Errore deleteSpark:", error);
+      throw error;
+    }
+  },
+};
