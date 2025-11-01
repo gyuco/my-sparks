@@ -19,7 +19,8 @@ export default function LoginScreen() {
   const handleLogin = () => {
     // Logica di login
     console.log('Login:', { email, password });
-    router.push('/(tabs)');
+    // Usa replace invece di push per evitare di tornare indietro al login
+    router.replace('/(tabs)');
   };
 
   return (

@@ -1,9 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
+  const handleLogout = () => {
+    // Torna alla pagina di login
+    router.replace('/login');
+  };
+
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
@@ -18,7 +24,7 @@ export default function HomeScreen() {
             <ThemedText style={styles.userName}>Guest User</ThemedText>
           </View>
         </View>
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={28} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
