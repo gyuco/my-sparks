@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/use-auth';
-import { sparksService } from '@/lib/appwrite-service';
+import { aiService, sparksService } from '@/lib/appwrite-service';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -25,22 +25,37 @@ export default function CreateSparkScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateWithAI = async () => {
+    console.log('=== INIZIO handleGenerateWithAI ===');
+    console.log('Title:', title);
+    
     if (!title.trim()) {
       Alert.alert('Suggerimento', 'Inserisci prima un titolo per generare contenuto più pertinente');
       return;
     }
 
     try {
+      console.log('Setting isGenerating to true');
       setIsGenerating(true);
-      // Simulazione chiamata API IA - sostituisci con la tua implementazione
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const generatedText = `Contenuto generato dall'IA basato su: "${title}"\n\nQuesta è una spark innovativa che esplora nuove possibilità e idee creative. L'intelligenza artificiale può aiutarti a sviluppare ulteriormente questo concetto.`;
+      
+      // Crea un prompt per l'IA
+      const prompt = `Scrivi un contenuto creativo e coinvolgente per una "spark" (idea innovativa) con il seguente titolo: "${title}". Il contenuto deve essere ispirazionale, conciso e stimolare la creatività. Massimo 200 parole.`;
+      
+      console.log('Prompt creato:', prompt);
+      console.log('Chiamando aiService.generateText...');
+      
+      // Chiama la funzione Appwrite per generare il testo
+      const generatedText = await aiService.generateText(prompt, 300);
+      
+      console.log('Testo generato ricevuto:', generatedText);
       setContent(generatedText);
+      console.log('Contenuto impostato');
     } catch (error) {
-      console.error('Errore nella generazione:', error);
+      console.error('=== ERRORE nella generazione ===', error);
       Alert.alert('Errore', 'Impossibile generare il contenuto. Riprova.');
     } finally {
+      console.log('Setting isGenerating to false');
       setIsGenerating(false);
+      console.log('=== FINE handleGenerateWithAI ===');
     }
   };
 

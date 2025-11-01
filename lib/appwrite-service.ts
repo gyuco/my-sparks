@@ -1,4 +1,4 @@
-import { account, appwriteConfig, databases, ID } from "./appwrite";
+import { account, appwriteConfig, databases, ID } from './appwrite';
 
 // Servizi di autenticazione
 export const authService = {
@@ -19,7 +19,7 @@ export const authService = {
 
       return newAccount;
     } catch (error) {
-      console.error("Errore createAccount:", error);
+      console.error('Errore createAccount:', error);
       throw error;
     }
   },
@@ -30,7 +30,7 @@ export const authService = {
       const session = await account.createEmailPasswordSession(email, password);
       return session;
     } catch (error) {
-      console.error("Errore login:", error);
+      console.error('Errore login:', error);
       throw error;
     }
   },
@@ -38,9 +38,9 @@ export const authService = {
   // Logout
   async logout() {
     try {
-      await account.deleteSession("current");
+      await account.deleteSession('current');
     } catch (error) {
-      console.error("Errore logout:", error);
+      console.error('Errore logout:', error);
       throw error;
     }
   },
@@ -51,7 +51,7 @@ export const authService = {
       const currentUser = await account.get();
       return currentUser;
     } catch (error) {
-      console.error("Errore getCurrentUser:", error);
+      console.error('Errore getCurrentUser:', error);
       return null;
     }
   },
@@ -84,7 +84,7 @@ export const databaseService = {
       );
       return response;
     } catch (error) {
-      console.error("Errore createDocument:", error);
+      console.error('Errore createDocument:', error);
       throw error;
     }
   },
@@ -99,7 +99,7 @@ export const databaseService = {
       );
       return response;
     } catch (error) {
-      console.error("Errore getDocument:", error);
+      console.error('Errore getDocument:', error);
       throw error;
     }
   },
@@ -114,7 +114,7 @@ export const databaseService = {
       );
       return response;
     } catch (error) {
-      console.error("Errore listDocuments:", error);
+      console.error('Errore listDocuments:', error);
       throw error;
     }
   },
@@ -134,7 +134,7 @@ export const databaseService = {
       );
       return response;
     } catch (error) {
-      console.error("Errore updateDocument:", error);
+      console.error('Errore updateDocument:', error);
       throw error;
     }
   },
@@ -148,7 +148,7 @@ export const databaseService = {
         documentId
       );
     } catch (error) {
-      console.error("Errore deleteDocument:", error);
+      console.error('Errore deleteDocument:', error);
       throw error;
     }
   },
@@ -169,7 +169,7 @@ export const sparksService = {
       );
       return response;
     } catch (error) {
-      console.error("Errore createSpark:", error);
+      console.error('Errore createSpark:', error);
       throw error;
     }
   },
@@ -183,7 +183,7 @@ export const sparksService = {
       );
       return response;
     } catch (error) {
-      console.error("Errore getSpark:", error);
+      console.error('Errore getSpark:', error);
       throw error;
     }
   },
@@ -191,14 +191,14 @@ export const sparksService = {
   // Ottieni tutte le sparks dell'utente
   async getUserSparks(userId: string) {
     try {
-      const { Query } = await import("react-native-appwrite");
+      const { Query } = await import('react-native-appwrite');
       const response = await databaseService.listDocuments(
         appwriteConfig.sparksCollectionId,
-        [Query.equal("user_id", userId), Query.orderDesc("$createdAt")]
+        [Query.equal('user_id', userId), Query.orderDesc('$createdAt')]
       );
       return response.documents;
     } catch (error) {
-      console.error("Errore getUserSparks:", error);
+      console.error('Errore getUserSparks:', error);
       throw error;
     }
   },
@@ -216,7 +216,7 @@ export const sparksService = {
       );
       return response;
     } catch (error) {
-      console.error("Errore updateSpark:", error);
+      console.error('Errore updateSpark:', error);
       throw error;
     }
   },
@@ -229,7 +229,60 @@ export const sparksService = {
         sparkId
       );
     } catch (error) {
-      console.error("Errore deleteSpark:", error);
+      console.error('Errore deleteSpark:', error);
+      throw error;
+    }
+  },
+};
+
+// Servizi per l'IA
+export const aiService = {
+  // Genera testo con IA
+  async generateText(prompt: string, maxTokens: number = 200) {
+    try {
+      const body = {
+        prompt,
+        max_new_tokens: maxTokens,
+      };
+
+      const functionUrl = `https://${appwriteConfig.textGenerationFunctionId}.nyc.appwrite.run/`;
+
+      console.log('Chiamata funzione IA:', {
+        url: functionUrl,
+        body,
+      });
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Appwrite-Project': appwriteConfig.projectId,
+        },
+        body: JSON.stringify(body),
+      });
+
+      console.log('Risposta HTTP status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Errore HTTP:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      console.log('Risposta completa:', result);
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Errore nella generazione del testo');
+      }
+
+      return result.completion;
+    } catch (error: any) {
+      console.error('Errore generateText:', {
+        message: error.message,
+        functionId: appwriteConfig.textGenerationFunctionId,
+      });
       throw error;
     }
   },
