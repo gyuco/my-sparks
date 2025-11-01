@@ -61,8 +61,8 @@
 
 ## 🎯 Caratteristiche principali
 
-### Streaming in tempo reale
-Il testo appare progressivamente mentre viene generato, offrendo un'esperienza fluida e moderna.
+### Generazione con OpenRouter
+Il testo viene generato usando i modelli AI disponibili su OpenRouter tramite LangChain.
 
 ### Modelli configurabili
 Puoi facilmente cambiare il modello AI modificando il parametro in `create-spark.tsx`:

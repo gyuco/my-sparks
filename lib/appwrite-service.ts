@@ -1,4 +1,4 @@
-import { account, appwriteConfig, databases, ID } from './appwrite';
+import { account, appwriteConfig, databases, functions, ID } from './appwrite';
 
 // Servizi di autenticazione
 export const authService = {
@@ -237,85 +237,52 @@ export const sparksService = {
 
 // Servizi per l'IA
 export const aiService = {
-  // Genera testo con IA usando OpenRouter con streaming
+  // Genera testo con IA usando OpenRouter
   async generateText(
     prompt: string,
     model: string = 'openai/gpt-3.5-turbo',
-    temperature: number = 0.7,
-    onChunk?: (text: string) => void
+    temperature: number = 0.7
   ) {
     try {
-      const body = {
+      const body = JSON.stringify({
         prompt,
         model,
         temperature,
-      };
-
-      const functionUrl = `https://${appwriteConfig.textGenerationFunctionId}.nyc.appwrite.run/`;
+      });
 
       console.log('Chiamata funzione OpenRouter:', {
-        url: functionUrl,
+        functionId: appwriteConfig.textGenerationFunctionId,
+        model,
+        temperature,
+      });
+
+      // Usa l'SDK di Appwrite per chiamare la funzione
+      const execution = await functions.createExecution(
+        appwriteConfig.textGenerationFunctionId,
         body,
-      });
+        false // async = false per ottenere la risposta sincrona
+      );
 
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Appwrite-Project': appwriteConfig.projectId,
-        },
-        body: JSON.stringify(body),
-      });
+      console.log('Execution status:', execution.responseStatusCode);
 
-      console.log('Risposta HTTP status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Errore HTTP:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (execution.responseStatusCode !== 200) {
+        throw new Error(
+          `Function execution failed: ${execution.responseStatusCode}`
+        );
       }
 
-      // Gestione dello stream
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('Stream non disponibile');
+      // Parse della risposta
+      const responseBody = execution.responseBody;
+      console.log('Response body:', responseBody);
+
+      // Parse JSON response
+      const parsed = JSON.parse(responseBody);
+
+      if (!parsed.ok) {
+        throw new Error(parsed.error || 'Errore nella generazione del testo');
       }
 
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (data.content) {
-                fullText += data.content;
-                // Callback per aggiornamenti in tempo reale
-                if (onChunk) {
-                  onChunk(data.content);
-                }
-              }
-
-              if (data.done) {
-                console.log('Stream completato');
-              }
-            } catch {
-              // Ignora errori di parsing per linee incomplete
-            }
-          }
-        }
-      }
-
-      console.log('Testo completo generato:', fullText);
-      return fullText;
+      return parsed.content;
     } catch (error: any) {
       console.error('Errore generateText:', {
         message: error.message,

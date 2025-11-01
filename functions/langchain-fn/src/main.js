@@ -2,17 +2,22 @@ import { ChatOpenAI } from '@langchain/openai';
 
 export default async ({ req, res, log, error }) => {
   try {
-    // Verifica che la richiesta sia POST
-    if (req.method !== 'POST') {
-      return res.json({ error: 'Method not allowed' }, 405);
+    // Estrai i parametri dalla richiesta
+    // Il body può arrivare come stringa o oggetto
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        log('Body is not JSON, using as is');
+      }
     }
 
-    // Estrai i parametri dalla richiesta
     const {
       prompt,
       model = 'openai/gpt-3.5-turbo',
       temperature = 0.7,
-    } = req.body;
+    } = body || {};
 
     if (!prompt) {
       return res.json({ error: 'Prompt is required' }, 400);
@@ -39,33 +44,31 @@ export default async ({ req, res, log, error }) => {
           'X-Title': process.env.APP_NAME || 'Sparks App',
         },
       },
-      streaming: true,
+      streaming: false, // Disabilita streaming per compatibilità con Appwrite SDK
     });
 
-    // Imposta gli headers per lo streaming
-    res.setHeaders({
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
+    // Genera il testo
+    log('Invoking LLM...');
+    const response = await llm.invoke(prompt);
+
+    log('Response received');
+    const content = response.content;
+
+    // Restituisci la risposta come JSON
+    return res.json({
+      ok: true,
+      content: content,
+      model: model,
+      temperature: temperature,
     });
-
-    // Stream della risposta
-    const stream = await llm.stream(prompt);
-
-    for await (const chunk of stream) {
-      const content = chunk.content;
-      if (content) {
-        res.send(`data: ${JSON.stringify({ content })}\n\n`);
-      }
-    }
-
-    // Invia evento di completamento
-    res.send(`data: ${JSON.stringify({ done: true })}\n\n`);
-
-    log('Stream completed successfully');
-    return res.empty();
   } catch (err) {
     error(`Error processing request: ${err.message}`);
-    return res.json({ error: err.message }, 500);
+    return res.json(
+      {
+        ok: false,
+        error: err.message,
+      },
+      500
+    );
   }
 };

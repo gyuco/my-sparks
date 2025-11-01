@@ -37,30 +37,25 @@ export default function CreateSparkScreen() {
     try {
       console.log('Setting isGenerating to true');
       setIsGenerating(true);
-      setContent(''); // Reset del contenuto
       
       // Crea un prompt per l'IA
       const prompt = `Scrivi un contenuto creativo e coinvolgente per una "spark" (idea innovativa) con il seguente titolo: "${title}". Il contenuto deve essere ispirazionale, conciso e stimolare la creatività. Massimo 200 parole.`;
       
       console.log('Prompt creato:', prompt);
-      console.log('Chiamando aiService.generateText con streaming...');
+      console.log('Chiamando aiService.generateText...');
       
-      // Chiama la funzione OpenRouter con streaming
+      // Chiama la funzione OpenRouter
       const generatedText = await aiService.generateText(
         prompt,
         'openai/gpt-3.5-turbo', // Modello
-        0.7, // Temperature
-        (chunk) => {
-          // Callback per aggiornamenti in tempo reale
-          setContent((prev) => prev + chunk);
-        }
+        0.7 // Temperature
       );
       
-      console.log('Testo generato completo:', generatedText);
+      console.log('Testo generato:', generatedText);
+      setContent(generatedText);
     } catch (error) {
       console.error('=== ERRORE nella generazione ===', error);
       Alert.alert('Errore', 'Impossibile generare il contenuto. Riprova.');
-      setContent(''); // Reset in caso di errore
     } finally {
       console.log('Setting isGenerating to false');
       setIsGenerating(false);
