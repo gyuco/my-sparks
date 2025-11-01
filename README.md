@@ -1,50 +1,75 @@
-# Welcome to your Expo app 👋
+# 🤖 Text generation with hugging face Function
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Ask question, and use Huggingface inference models to get the answer.
 
-## Get started
+## 🧰 Usage
 
-1. Install dependencies
+### GET /
 
-   ```bash
-   npm install
-   ```
+HTML form for interacting with the function.
 
-2. Start the app
+### POST /
 
-   ```bash
-   npx expo start
-   ```
+Query the model for a completion.
 
-In the output, you'll find options to open the app in a
+**Parameters**
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Name         | Description                          | Location | Type               | Sample Value                  |
+| ------------ | ------------------------------------ | -------- | ------------------ | ----------------------------- |
+| Content-Type | The content type of the request body | Header   | `application/json` | N/A                           |
+| prompt       | Text to prompt the model             | Body     | String             | `Write a haiku about Mondays` |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Sample `200` Response:
 
-## Get a fresh project
+Response from the model.
 
-When you're ready, run:
-
-```bash
-npm run reset-project
+```json
+{
+  "ok": true,
+  "completion": "Monday's heavy weight, Dawning with a sigh of grey, Hopeful hearts await."
+}
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Sample `400` Response:
 
-## Learn more
+Response when the request body is missing.
 
-To learn more about developing your project with Expo, look at the following resources:
+```json
+{
+  "ok": false,
+  "error": "Missing body with a prompt."
+}
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Sample `500` Response:
 
-## Join the community
+Response when the model fails to respond.
 
-Join our community of developers creating universal apps.
+```json
+{
+  "ok": false,
+  "error": "Failed to query model."
+}
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## ⚙️ Configuration
+
+| Setting           | Value         |
+| ----------------- | ------------- |
+| Runtime           | Node (18.0)   |
+| Entrypoint        | `src/main.js` |
+| Build Commands    | `npm install` |
+| Permissions       | `any`         |
+| Timeout (Seconds) | 15            |
+
+## 🔒 Environment Variables
+
+### HUGGINGFACE_ACCESS_TOKEN
+
+An access token for the HuggingFace API. Get one by signing up at [HuggingFace](https://huggingface.co/).
+
+| Question      | Answer                                                                          |
+| ------------- | ------------------------------------------------------------------------------- |
+| Required      | Yes                                                                             |
+| Sample Value  | `api_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`                                  |
+| Documentation | [HuggingFace API Documentation](https://huggingface.co/docs/datasets/translate) |
