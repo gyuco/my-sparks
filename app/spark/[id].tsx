@@ -9,13 +9,15 @@ import {
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
+    Linking,
     Modal,
     Platform,
+    Text as RNText,
     ScrollView,
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 export default function SparkDetailScreen() {
@@ -88,6 +90,36 @@ export default function SparkDetailScreen() {
       Alert.alert('Errore', 'Impossibile eliminare la spark');
       setIsDeleting(false);
     }
+  };
+
+  const renderContentWithLinks = (text: string) => {
+    // Regex per rilevare URL
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+
+    return (
+      <RNText style={styles.contentText}>
+        {parts.map((part, index) => {
+          if (part.match(urlRegex)) {
+            return (
+              <RNText
+                key={index}
+                style={styles.linkText}
+                onPress={() => {
+                  Linking.openURL(part).catch(err => {
+                    console.error('Errore apertura link:', err);
+                    Alert.alert('Errore', 'Impossibile aprire il link');
+                  });
+                }}
+              >
+                {part}
+              </RNText>
+            );
+          }
+          return <RNText key={index}>{part}</RNText>;
+        })}
+      </RNText>
+    );
   };
 
   if (isLoading) {
@@ -169,30 +201,32 @@ export default function SparkDetailScreen() {
           {/* Content */}
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Contenuto</ThemedText>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={[styles.contentInput, !isEditing && styles.inputDisabled]}
-                value={content}
-                onChangeText={setContent}
-                maxLength={1000}
-                multiline
-                numberOfLines={15}
-                textAlignVertical="top"
-                editable={isEditing}
-              />
-              {isEditing && (
+            {isEditing ? (
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.contentInput}
+                  value={content}
+                  onChangeText={setContent}
+                  maxLength={1000}
+                  multiline
+                  numberOfLines={15}
+                  textAlignVertical="top"
+                  editable={true}
+                />
                 <View style={styles.voiceButtonWrapper}>
                   <VoiceInputButton
                     onTranscript={(text) => setContent((prev) => prev + ' ' + text)}
                     disabled={isSaving}
                   />
                 </View>
-              )}
-            </View>
-            {isEditing && (
-              <ThemedText style={styles.charCount}>
-                {content.length}/1000
-              </ThemedText>
+                <ThemedText style={styles.charCount}>
+                  {content.length}/1000
+                </ThemedText>
+              </View>
+            ) : (
+              <View style={styles.contentDisplay}>
+                {renderContentWithLinks(content)}
+              </View>
             )}
           </View>
 
@@ -372,6 +406,23 @@ const styles = StyleSheet.create({
   inputDisabled: {
     backgroundColor: '#0F1F3A',
     borderColor: '#1A2942',
+  },
+  contentDisplay: {
+    backgroundColor: '#0F1F3A',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#1A2942',
+    minHeight: 300,
+  },
+  contentText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    lineHeight: 24,
+  },
+  linkText: {
+    color: '#00D4FF',
+    textDecorationLine: 'underline',
   },
   charCount: {
     fontSize: 12,
