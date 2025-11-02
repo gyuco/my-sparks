@@ -1,6 +1,7 @@
 import { AIStreamingIndicator } from '@/components/ai-streaming-indicator';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { VoiceInputButton } from '@/components/voice-input-button';
 import { useAuth } from '@/hooks/use-auth';
 import { aiService, sparksService } from '@/lib/appwrite-service';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,15 +118,23 @@ export default function CreateSparkScreen() {
           {/* Title Input */}
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Titolo</ThemedText>
-            <TextInput
-              style={styles.titleInput}
-              placeholder="Dai un titolo alla tua idea..."
-              placeholderTextColor="#8B92A0"
-              value={title}
-              onChangeText={setTitle}
-              maxLength={200}
-              editable={!isSubmitting}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.titleInput}
+                placeholder="Dai un titolo alla tua idea..."
+                placeholderTextColor="#8B92A0"
+                value={title}
+                onChangeText={setTitle}
+                maxLength={200}
+                editable={!isSubmitting}
+              />
+              <View style={styles.voiceButtonWrapper}>
+                <VoiceInputButton
+                  onTranscript={(text) => setTitle((prev) => prev + ' ' + text)}
+                  disabled={isSubmitting}
+                />
+              </View>
+            </View>
             <ThemedText style={styles.charCount}>
               {title.length}/200
             </ThemedText>
@@ -156,18 +165,26 @@ export default function CreateSparkScreen() {
             {/* Indicatore streaming */}
             <AIStreamingIndicator isStreaming={isGenerating} />
             
-            <TextInput
-              style={styles.contentInput}
-              placeholder="Scrivi la tua idea..."
-              placeholderTextColor="#8B92A0"
-              value={content}
-              onChangeText={setContent}
-              maxLength={1000}
-              multiline
-              numberOfLines={10}
-              textAlignVertical="top"
-              editable={!isSubmitting && !isGenerating}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.contentInput}
+                placeholder="Scrivi la tua idea..."
+                placeholderTextColor="#8B92A0"
+                value={content}
+                onChangeText={setContent}
+                maxLength={1000}
+                multiline
+                numberOfLines={10}
+                textAlignVertical="top"
+                editable={!isSubmitting && !isGenerating}
+              />
+              <View style={styles.voiceButtonWrapper}>
+                <VoiceInputButton
+                  onTranscript={(text) => setContent((prev) => prev + ' ' + text)}
+                  disabled={isSubmitting || isGenerating}
+                />
+              </View>
+            </View>
             <ThemedText style={styles.charCount}>
               {content.length}/1000
             </ThemedText>
@@ -259,6 +276,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#00D4FF',
     marginLeft: 4,
+  },
+  inputWrapper: {
+    position: 'relative',
+  },
+  voiceButtonWrapper: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    zIndex: 10,
   },
   titleInput: {
     backgroundColor: '#1A2942',

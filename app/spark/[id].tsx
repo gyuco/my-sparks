@@ -1,20 +1,21 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { VoiceInputButton } from '@/components/voice-input-button';
 import { sparksService } from '@/lib/appwrite-service';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export default function SparkDetailScreen() {
@@ -141,13 +142,23 @@ export default function SparkDetailScreen() {
           {/* Title */}
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Titolo</ThemedText>
-            <TextInput
-              style={[styles.titleInput, !isEditing && styles.inputDisabled]}
-              value={title}
-              onChangeText={setTitle}
-              maxLength={200}
-              editable={isEditing}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={[styles.titleInput, !isEditing && styles.inputDisabled]}
+                value={title}
+                onChangeText={setTitle}
+                maxLength={200}
+                editable={isEditing}
+              />
+              {isEditing && (
+                <View style={styles.voiceButtonWrapper}>
+                  <VoiceInputButton
+                    onTranscript={(text) => setTitle((prev) => prev + ' ' + text)}
+                    disabled={isSaving}
+                  />
+                </View>
+              )}
+            </View>
             {isEditing && (
               <ThemedText style={styles.charCount}>
                 {title.length}/200
@@ -158,16 +169,26 @@ export default function SparkDetailScreen() {
           {/* Content */}
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Contenuto</ThemedText>
-            <TextInput
-              style={[styles.contentInput, !isEditing && styles.inputDisabled]}
-              value={content}
-              onChangeText={setContent}
-              maxLength={1000}
-              multiline
-              numberOfLines={15}
-              textAlignVertical="top"
-              editable={isEditing}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={[styles.contentInput, !isEditing && styles.inputDisabled]}
+                value={content}
+                onChangeText={setContent}
+                maxLength={1000}
+                multiline
+                numberOfLines={15}
+                textAlignVertical="top"
+                editable={isEditing}
+              />
+              {isEditing && (
+                <View style={styles.voiceButtonWrapper}>
+                  <VoiceInputButton
+                    onTranscript={(text) => setContent((prev) => prev + ' ' + text)}
+                    disabled={isSaving}
+                  />
+                </View>
+              )}
+            </View>
             {isEditing && (
               <ThemedText style={styles.charCount}>
                 {content.length}/1000
@@ -307,11 +328,26 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 24,
   },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     marginBottom: 12,
+  },
+  inputWrapper: {
+    position: 'relative',
+  },
+  voiceButtonWrapper: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    zIndex: 10,
   },
   titleInput: {
     backgroundColor: '#1A2942',
