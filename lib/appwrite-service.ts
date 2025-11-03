@@ -1,4 +1,5 @@
 import { account, appwriteConfig, databases, functions, ID } from './appwrite';
+import { AISettings, DEFAULT_AI_SETTINGS } from './types';
 
 // Servizi di autenticazione
 export const authService = {
@@ -230,6 +231,69 @@ export const sparksService = {
       );
     } catch (error) {
       console.error('Errore deleteSpark:', error);
+      throw error;
+    }
+  },
+};
+
+// Servizi per le Settings
+export const settingsService = {
+  // Ottieni le impostazioni dell'utente
+  async getUserSettings(userId: string): Promise<AISettings> {
+    try {
+      const { Query } = await import('react-native-appwrite');
+      const response = await databaseService.listDocuments(
+        appwriteConfig.settingsCollectionId,
+        [Query.equal('user_id', userId)]
+      );
+
+      if (response.documents.length > 0) {
+        return response.documents[0] as AISettings;
+      }
+
+      // Se non esistono settings, crea con valori di default
+      return await this.createUserSettings(userId);
+    } catch (error) {
+      console.error('Errore getUserSettings:', error);
+      throw error;
+    }
+  },
+
+  // Crea nuove impostazioni per l'utente
+  async createUserSettings(userId: string): Promise<AISettings> {
+    try {
+      const response = await databaseService.createDocument(
+        appwriteConfig.settingsCollectionId,
+        {
+          user_id: userId,
+          ...DEFAULT_AI_SETTINGS,
+        }
+      );
+      return response as AISettings;
+    } catch (error) {
+      console.error('Errore createUserSettings:', error);
+      throw error;
+    }
+  },
+
+  // Aggiorna le impostazioni dell'utente
+  async updateUserSettings(
+    settingsId: string,
+    model: string,
+    temperature: number
+  ): Promise<AISettings> {
+    try {
+      const response = await databaseService.updateDocument(
+        appwriteConfig.settingsCollectionId,
+        settingsId,
+        {
+          model,
+          temperature,
+        }
+      );
+      return response as AISettings;
+    } catch (error) {
+      console.error('Errore updateUserSettings:', error);
       throw error;
     }
   },

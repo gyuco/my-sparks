@@ -3,10 +3,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { VoiceInputButton } from '@/components/voice-input-button';
 import { useAuth } from '@/hooks/use-auth';
-import { aiService, sparksService } from '@/lib/appwrite-service';
+import { aiService, settingsService, sparksService } from '@/lib/appwrite-service';
+import { AISettings, DEFAULT_AI_SETTINGS } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -25,6 +26,22 @@ export default function CreateSparkScreen() {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [settings, setSettings] = useState<AISettings | null>(null);
+
+  // Carica le impostazioni dell'utente
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!user) return;
+      try {
+        const userSettings = await settingsService.getUserSettings(user.$id);
+        setSettings(userSettings);
+      } catch (error) {
+        console.error('Errore nel caricamento delle impostazioni:', error);
+        // Usa valori di default se non riesce a caricare
+      }
+    };
+    loadSettings();
+  }, [user]);
 
   const handleGenerateWithAI = async () => {
     console.log('=== INIZIO handleGenerateWithAI ===');
@@ -44,12 +61,18 @@ export default function CreateSparkScreen() {
       
       console.log('Prompt creato:', prompt);
       console.log('Chiamando aiService.generateText...');
-      
+
+      // Usa le impostazioni dell'utente o i valori di default
+      const model = settings?.model || DEFAULT_AI_SETTINGS.model;
+      const temperature = settings?.temperature || DEFAULT_AI_SETTINGS.temperature;
+
+      console.log('Using model:', model, 'temperature:', temperature);
+
       // Chiama la funzione OpenRouter
       const generatedText = await aiService.generateText(
         prompt,
-        'openai/gpt-3.5-turbo', // Modello
-        0.7 // Temperature
+        model,
+        temperature
       );
       
       console.log('Testo generato:', generatedText);

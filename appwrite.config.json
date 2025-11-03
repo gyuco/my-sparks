@@ -89,6 +89,58 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "$id": "settings",
+      "$permissions": [
+        "create(\"users\")",
+        "read(\"users\")",
+        "update(\"users\")",
+        "delete(\"users\")"
+      ],
+      "databaseId": "69060d01001426c861c9",
+      "name": "settings",
+      "enabled": true,
+      "rowSecurity": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 100,
+          "default": null,
+          "encrypt": false
+        },
+        {
+          "key": "model",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 100,
+          "default": "openai/gpt-3.5-turbo",
+          "encrypt": false
+        },
+        {
+          "key": "temperature",
+          "type": "double",
+          "required": true,
+          "array": false,
+          "min": 0,
+          "max": 2,
+          "default": 0.7,
+          "encrypt": false
+        }
+      ],
+      "indexes": [
+        {
+          "key": "user_id_index",
+          "type": "key",
+          "status": "available",
+          "attributes": ["user_id"],
+          "orders": ["ASC"]
+        }
+      ]
     }
   ],
   "functions": [
