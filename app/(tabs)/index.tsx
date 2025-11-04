@@ -181,7 +181,10 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push('/(tabs)/settings')}
+        >
           <Ionicons name="settings-outline" size={24} color="#8B92A0" />
           <ThemedText style={styles.navText}>Settings</ThemedText>
         </TouchableOpacity>
