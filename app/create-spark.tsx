@@ -9,15 +9,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function CreateSparkScreen() {
@@ -27,6 +27,7 @@ export default function CreateSparkScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [settings, setSettings] = useState<AISettings | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Carica le impostazioni dell'utente
   useEffect(() => {
@@ -46,11 +47,15 @@ export default function CreateSparkScreen() {
   const handleGenerateWithAI = async () => {
     console.log('=== INIZIO handleGenerateWithAI ===');
     console.log('Title:', title);
+    console.log('Content:', content);
     
-    if (!title.trim()) {
-      Alert.alert('Suggerimento', 'Inserisci prima un titolo per generare contenuto più pertinente');
+    if (!title.trim() || !content.trim()) {
+      setErrorMessage('⚠️ Inserisci sia il titolo che il contenuto per generare con l\'IA');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
+    
+    setErrorMessage('');
 
     try {
       console.log('Setting isGenerating to true');
@@ -184,6 +189,13 @@ export default function CreateSparkScreen() {
                 )}
               </TouchableOpacity>
             </View>
+            
+            {/* Messaggio di errore */}
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+              </View>
+            ) : null}
             
             {/* Indicatore streaming */}
             <AIStreamingIndicator isStreaming={isGenerating} />
@@ -356,5 +368,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginLeft: 8,
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.3)',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF3B30',
+    textAlign: 'center',
   },
 });
