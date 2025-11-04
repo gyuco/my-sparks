@@ -84,12 +84,18 @@ const generatedText = await aiService.generateText(
 );
 ```
 
-### Modelli consigliati:
+### Modelli gratuiti consigliati:
+- `meta-llama/llama-3.2-3b-instruct:free` - Veloce e gratuito (default)
+- `meta-llama/llama-3.2-1b-instruct:free` - Ultra-veloce
+- `google/gemma-2-9b-it:free` - Buona qualità
+- `microsoft/phi-3-mini-128k-instruct:free` - Compatto
+- `qwen/qwen-2-7b-instruct:free` - Multilingua
+
+### Modelli a pagamento (più potenti):
 - `openai/gpt-3.5-turbo` - Veloce ed economico
-- `openai/gpt-4` - Più potente ma più costoso
-- `anthropic/claude-3-opus` - Ottimo per testi creativi
-- `meta-llama/llama-3-70b-instruct` - Open source
-- `google/gemini-pro` - Buon rapporto qualità/prezzo
+- `openai/gpt-4o-mini` - Ottimo rapporto qualità/prezzo
+- `anthropic/claude-3-haiku` - Veloce e preciso
+- `google/gemini-pro` - Potente
 
 Lista completa: https://openrouter.ai/models
 

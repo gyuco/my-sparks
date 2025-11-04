@@ -3,30 +3,35 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { VoiceInputButton } from '@/components/voice-input-button';
 import { useAuth } from '@/hooks/use-auth';
+import { useAlert } from '@/lib/alert-service';
 import { aiService, settingsService, sparksService } from '@/lib/appwrite-service';
 import { AISettings, DEFAULT_AI_SETTINGS } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function CreateSparkScreen() {
   const { user } = useAuth();
+  const { showAlert } = useAlert();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [settings, setSettings] = useState<AISettings | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [modalError, setModalError] = useState({ title: '', message: '', showSettings: false });
 
   // Carica le impostazioni dell'utente
   useEffect(() => {
@@ -46,11 +51,15 @@ export default function CreateSparkScreen() {
   const handleGenerateWithAI = async () => {
     console.log('=== INIZIO handleGenerateWithAI ===');
     console.log('Title:', title);
+    console.log('Content:', content);
     
-    if (!title.trim()) {
-      Alert.alert('Suggerimento', 'Inserisci prima un titolo per generare contenuto più pertinente');
+    if (!title.trim() || !content.trim()) {
+      setErrorMessage('⚠️ Inserisci sia il titolo che il contenuto per generare con l\'IA');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
+    
+    setErrorMessage('');
 
     try {
       console.log('Setting isGenerating to true');
@@ -77,9 +86,44 @@ export default function CreateSparkScreen() {
       
       console.log('Testo generato:', generatedText);
       setContent(generatedText);
-    } catch (error) {
+    } catch (error: any) {
       console.error('=== ERRORE nella generazione ===', error);
-      Alert.alert('Errore', 'Impossibile generare il contenuto. Riprova.');
+      
+      // Gestione errori specifici
+      const errorMessage = error?.message || String(error);
+      const isServerError = errorMessage.includes('500') || 
+                           errorMessage.includes('502') || 
+                           errorMessage.includes('503') ||
+                           errorMessage.includes('Internal Server Error') ||
+                           errorMessage.includes('failed: 5');
+      const isModelError = errorMessage.toLowerCase().includes('model') || 
+                          errorMessage.includes('401') ||
+                          errorMessage.includes('403');
+      
+      console.log('Error details:', { errorMessage, isServerError, isModelError });
+      
+      if (isServerError) {
+        setModalError({
+          title: 'Errore del Server',
+          message: 'Il servizio IA non è al momento disponibile. Verifica la configurazione del modello nelle impostazioni o riprova più tardi.',
+          showSettings: true
+        });
+        setShowErrorModal(true);
+      } else if (isModelError) {
+        setModalError({
+          title: 'Errore di Configurazione',
+          message: 'Il modello IA configurato non è valido. Verifica la configurazione del modello nelle impostazioni e riprova.',
+          showSettings: true
+        });
+        setShowErrorModal(true);
+      } else {
+        setModalError({
+          title: 'Errore',
+          message: 'Impossibile generare il contenuto. Verifica la configurazione del modello nelle impostazioni o riprova più tardi.',
+          showSettings: true
+        });
+        setShowErrorModal(true);
+      }
     } finally {
       console.log('Setting isGenerating to false');
       setIsGenerating(false);
@@ -89,17 +133,26 @@ export default function CreateSparkScreen() {
 
   const handleCreateSpark = async () => {
     if (!title.trim()) {
-      Alert.alert('Errore', 'Inserisci un titolo per la tua spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Inserisci un titolo per la tua spark',
+      });
       return;
     }
 
     if (!content.trim()) {
-      Alert.alert('Errore', 'Inserisci il contenuto della tua spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Inserisci il contenuto della tua spark',
+      });
       return;
     }
 
     if (!user) {
-      Alert.alert('Errore', 'Devi essere loggato per creare una spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Devi essere loggato per creare una spark',
+      });
       return;
     }
 
@@ -110,7 +163,10 @@ export default function CreateSparkScreen() {
       router.back();
     } catch (error) {
       console.error('Errore nella creazione della spark:', error);
-      Alert.alert('Errore', 'Impossibile creare la spark. Riprova.');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile creare la spark. Riprova.',
+      });
       setIsSubmitting(false);
     }
   };
@@ -185,6 +241,13 @@ export default function CreateSparkScreen() {
               </TouchableOpacity>
             </View>
             
+            {/* Messaggio di errore */}
+            {errorMessage ? (
+              <View style={styles.errorContainer}>
+                <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+              </View>
+            ) : null}
+            
             {/* Indicatore streaming */}
             <AIStreamingIndicator isStreaming={isGenerating} />
             
@@ -232,6 +295,46 @@ export default function CreateSparkScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Error Modal */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Ionicons name="alert-circle" size={48} color="#FF3B30" style={styles.modalIcon} />
+            <ThemedText style={styles.modalTitle}>{modalError.title}</ThemedText>
+            <ThemedText style={styles.modalMessage}>{modalError.message}</ThemedText>
+            
+            <View style={styles.modalButtons}>
+              {modalError.showSettings && (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  onPress={() => {
+                    setShowErrorModal(false);
+                    router.push('/(tabs)/settings');
+                  }}
+                >
+                  <ThemedText style={styles.modalButtonTextPrimary}>
+                    Verifica Impostazioni
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setShowErrorModal(false)}
+              >
+                <ThemedText style={styles.modalButtonTextSecondary}>
+                  {modalError.showSettings ? 'Annulla' : 'OK'}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -356,5 +459,79 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginLeft: 8,
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.3)',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF3B30',
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1A2942',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A3952',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#8B92A0',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    width: '100%',
+    gap: 12,
+  },
+  modalButton: {
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#00D4FF',
+  },
+  modalButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#2A3952',
+  },
+  modalButtonTextPrimary: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  modalButtonTextSecondary: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8B92A0',
   },
 });

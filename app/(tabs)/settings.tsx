@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/use-auth';
+import { useAlert } from '@/lib/alert-service';
 import { settingsService } from '@/lib/appwrite-service';
 import { AISettings } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,17 +9,16 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 
 export default function SettingsScreen() {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { showAlert } = useAlert();
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,11 +42,14 @@ export default function SettingsScreen() {
       setTemperature(userSettings.temperature);
     } catch (error) {
       console.error('Errore nel caricamento delle impostazioni:', error);
-      Alert.alert('Errore', 'Impossibile caricare le impostazioni');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile caricare le impostazioni',
+      });
     } finally {
       setLoadingSettings(false);
     }
-  }, [user]);
+  }, [user, showAlert]);
 
   useEffect(() => {
     if (user) {
@@ -64,10 +67,16 @@ export default function SettingsScreen() {
         selectedModel,
         temperature
       );
-      Alert.alert('Successo', 'Impostazioni salvate con successo!');
+      showAlert({
+        title: 'Successo',
+        message: 'Impostazioni salvate con successo!',
+      });
     } catch (error) {
       console.error('Errore nel salvataggio delle impostazioni:', error);
-      Alert.alert('Errore', 'Impossibile salvare le impostazioni');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile salvare le impostazioni',
+      });
     } finally {
       setSaving(false);
     }
@@ -134,32 +143,27 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {/* Temperature Slider */}
+          {/* Temperature Input */}
           <View style={styles.settingSection}>
-            <View style={styles.temperatureHeader}>
-              <ThemedText style={styles.settingLabel}>Temperatura</ThemedText>
-              <ThemedText style={styles.temperatureValue}>
-                {temperature.toFixed(2)}
-              </ThemedText>
-            </View>
+            <ThemedText style={styles.settingLabel}>Temperatura</ThemedText>
             <ThemedText style={styles.settingDescription}>
-              Controlla la creatività delle risposte (0 = preciso, 2 = creativo)
+              Controlla la creatività delle risposte (valore tra 0 e 1, default 0.7)
             </ThemedText>
-            <View style={styles.sliderContainer}>
-              <ThemedText style={styles.sliderLabel}>0.0</ThemedText>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={2}
-                step={0.1}
-                value={temperature}
-                onValueChange={setTemperature}
-                minimumTrackTintColor="#00D4FF"
-                maximumTrackTintColor="#2A3952"
-                thumbTintColor="#00D4FF"
-              />
-              <ThemedText style={styles.sliderLabel}>2.0</ThemedText>
-            </View>
+            <TextInput
+              style={styles.textInput}
+              value={temperature.toString()}
+              onChangeText={(text) => {
+                const value = parseFloat(text);
+                if (!isNaN(value) && value >= 0 && value <= 1) {
+                  setTemperature(value);
+                } else if (text === '' || text === '.') {
+                  setTemperature(0);
+                }
+              }}
+              placeholder="0.7"
+              placeholderTextColor="#8B92A0"
+              keyboardType="decimal-pad"
+            />
           </View>
         </View>
 
@@ -284,32 +288,7 @@ const styles = StyleSheet.create({
     padding: 14,
     height: 50,
   },
-  temperatureHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  temperatureValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#00D4FF',
-  },
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  slider: {
-    flex: 1,
-    height: 40,
-  },
-  sliderLabel: {
-    fontSize: 12,
-    color: '#8B92A0',
-    width: 30,
-    textAlign: 'center',
-  },
+
   saveButton: {
     backgroundColor: '#00D4FF',
     borderRadius: 12,

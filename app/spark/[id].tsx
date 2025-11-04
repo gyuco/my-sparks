@@ -1,27 +1,27 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { VoiceInputButton } from '@/components/voice-input-button';
+import { useAlert } from '@/lib/alert-service';
 import { sparksService } from '@/lib/appwrite-service';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Linking,
-    Modal,
-    Platform,
-    Text as RNText,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 
 export default function SparkDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { showAlert } = useAlert();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -40,12 +40,15 @@ export default function SparkDetailScreen() {
       setContent(spark.content);
     } catch (error) {
       console.error('Errore nel caricamento della spark:', error);
-      Alert.alert('Errore', 'Impossibile caricare la spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile caricare la spark',
+      });
       router.back();
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, showAlert]);
 
   useEffect(() => {
     loadSpark();
@@ -53,12 +56,18 @@ export default function SparkDetailScreen() {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Errore', 'Il titolo non può essere vuoto');
+      showAlert({
+        title: 'Errore',
+        message: 'Il titolo non può essere vuoto',
+      });
       return;
     }
 
     if (!content.trim()) {
-      Alert.alert('Errore', 'Il contenuto non può essere vuoto');
+      showAlert({
+        title: 'Errore',
+        message: 'Il contenuto non può essere vuoto',
+      });
       return;
     }
 
@@ -70,7 +79,10 @@ export default function SparkDetailScreen() {
       // La lista si aggiornerà automaticamente quando si torna alla dashboard
     } catch (error) {
       console.error('Errore nel salvataggio della spark:', error);
-      Alert.alert('Errore', 'Impossibile salvare le modifiche');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile salvare le modifiche',
+      });
       setIsSaving(false);
     }
   };
@@ -87,39 +99,108 @@ export default function SparkDetailScreen() {
       router.back();
     } catch (error) {
       console.error('Errore nell\'eliminazione della spark:', error);
-      Alert.alert('Errore', 'Impossibile eliminare la spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile eliminare la spark',
+      });
       setIsDeleting(false);
     }
   };
 
-  const renderContentWithLinks = (text: string) => {
-    // Regex per rilevare URL
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = text.split(urlRegex);
-
-    return (
-      <RNText style={styles.contentText}>
-        {parts.map((part, index) => {
-          if (part.match(urlRegex)) {
-            return (
-              <RNText
-                key={index}
-                style={styles.linkText}
-                onPress={() => {
-                  Linking.openURL(part).catch(err => {
-                    console.error('Errore apertura link:', err);
-                    Alert.alert('Errore', 'Impossibile aprire il link');
-                  });
-                }}
-              >
-                {part}
-              </RNText>
-            );
-          }
-          return <RNText key={index}>{part}</RNText>;
-        })}
-      </RNText>
-    );
+  const markdownStyles = {
+    body: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      lineHeight: 24,
+    },
+    heading1: {
+      color: '#FFFFFF',
+      fontSize: 28,
+      fontWeight: 'bold' as const,
+      marginTop: 16,
+      marginBottom: 12,
+    },
+    heading2: {
+      color: '#FFFFFF',
+      fontSize: 24,
+      fontWeight: 'bold' as const,
+      marginTop: 14,
+      marginBottom: 10,
+    },
+    heading3: {
+      color: '#FFFFFF',
+      fontSize: 20,
+      fontWeight: 'bold' as const,
+      marginTop: 12,
+      marginBottom: 8,
+    },
+    paragraph: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      lineHeight: 24,
+      marginBottom: 12,
+    },
+    link: {
+      color: '#00D4FF',
+      textDecorationLine: 'underline' as const,
+    },
+    code_inline: {
+      backgroundColor: '#1A2942',
+      color: '#00D4FF',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    },
+    code_block: {
+      backgroundColor: '#1A2942',
+      color: '#FFFFFF',
+      padding: 12,
+      borderRadius: 8,
+      marginVertical: 8,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    },
+    fence: {
+      backgroundColor: '#1A2942',
+      color: '#FFFFFF',
+      padding: 12,
+      borderRadius: 8,
+      marginVertical: 8,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    },
+    blockquote: {
+      backgroundColor: '#1A2942',
+      borderLeftWidth: 4,
+      borderLeftColor: '#00D4FF',
+      paddingLeft: 12,
+      paddingVertical: 8,
+      marginVertical: 8,
+    },
+    list_item: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      lineHeight: 24,
+      marginBottom: 4,
+    },
+    bullet_list: {
+      marginBottom: 12,
+    },
+    ordered_list: {
+      marginBottom: 12,
+    },
+    strong: {
+      fontWeight: 'bold' as const,
+      color: '#FFFFFF',
+    },
+    em: {
+      fontStyle: 'italic' as const,
+      color: '#FFFFFF',
+    },
+    hr: {
+      backgroundColor: '#2A3952',
+      height: 1,
+      marginVertical: 16,
+    },
   };
 
   if (isLoading) {
@@ -225,7 +306,7 @@ export default function SparkDetailScreen() {
               </View>
             ) : (
               <View style={styles.contentDisplay}>
-                {renderContentWithLinks(content)}
+                <Markdown style={markdownStyles}>{content}</Markdown>
               </View>
             )}
           </View>
@@ -415,15 +496,7 @@ const styles = StyleSheet.create({
     borderColor: '#1A2942',
     minHeight: 300,
   },
-  contentText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    lineHeight: 24,
-  },
-  linkText: {
-    color: '#00D4FF',
-    textDecorationLine: 'underline',
-  },
+
   charCount: {
     fontSize: 12,
     color: '#8B92A0',
