@@ -12,12 +12,13 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 export default function CreateSparkScreen() {
@@ -28,6 +29,8 @@ export default function CreateSparkScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [modalError, setModalError] = useState({ title: '', message: '', showSettings: false });
 
   // Carica le impostazioni dell'utente
   useEffect(() => {
@@ -82,9 +85,44 @@ export default function CreateSparkScreen() {
       
       console.log('Testo generato:', generatedText);
       setContent(generatedText);
-    } catch (error) {
+    } catch (error: any) {
       console.error('=== ERRORE nella generazione ===', error);
-      Alert.alert('Errore', 'Impossibile generare il contenuto. Riprova.');
+      
+      // Gestione errori specifici
+      const errorMessage = error?.message || String(error);
+      const isServerError = errorMessage.includes('500') || 
+                           errorMessage.includes('502') || 
+                           errorMessage.includes('503') ||
+                           errorMessage.includes('Internal Server Error') ||
+                           errorMessage.includes('failed: 5');
+      const isModelError = errorMessage.toLowerCase().includes('model') || 
+                          errorMessage.includes('401') ||
+                          errorMessage.includes('403');
+      
+      console.log('Error details:', { errorMessage, isServerError, isModelError });
+      
+      if (isServerError) {
+        setModalError({
+          title: 'Errore del Server',
+          message: 'Il servizio IA non è al momento disponibile. Verifica la configurazione del modello nelle impostazioni o riprova più tardi.',
+          showSettings: true
+        });
+        setShowErrorModal(true);
+      } else if (isModelError) {
+        setModalError({
+          title: 'Errore di Configurazione',
+          message: 'Il modello IA configurato non è valido. Verifica la configurazione del modello nelle impostazioni e riprova.',
+          showSettings: true
+        });
+        setShowErrorModal(true);
+      } else {
+        setModalError({
+          title: 'Errore',
+          message: 'Impossibile generare il contenuto. Verifica la configurazione del modello nelle impostazioni o riprova più tardi.',
+          showSettings: true
+        });
+        setShowErrorModal(true);
+      }
     } finally {
       console.log('Setting isGenerating to false');
       setIsGenerating(false);
@@ -244,6 +282,46 @@ export default function CreateSparkScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Error Modal */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Ionicons name="alert-circle" size={48} color="#FF3B30" style={styles.modalIcon} />
+            <ThemedText style={styles.modalTitle}>{modalError.title}</ThemedText>
+            <ThemedText style={styles.modalMessage}>{modalError.message}</ThemedText>
+            
+            <View style={styles.modalButtons}>
+              {modalError.showSettings && (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  onPress={() => {
+                    setShowErrorModal(false);
+                    router.push('/(tabs)/settings');
+                  }}
+                >
+                  <ThemedText style={styles.modalButtonTextPrimary}>
+                    Verifica Impostazioni
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setShowErrorModal(false)}
+              >
+                <ThemedText style={styles.modalButtonTextSecondary}>
+                  {modalError.showSettings ? 'Annulla' : 'OK'}
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -381,5 +459,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FF3B30',
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1A2942',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A3952',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#8B92A0',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    width: '100%',
+    gap: 12,
+  },
+  modalButton: {
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#00D4FF',
+  },
+  modalButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#2A3952',
+  },
+  modalButtonTextPrimary: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  modalButtonTextSecondary: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8B92A0',
   },
 });
