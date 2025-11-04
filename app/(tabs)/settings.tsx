@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/use-auth';
 import { settingsService } from '@/lib/appwrite-service';
-import { AISettings, AVAILABLE_MODELS } from '@/lib/types';
+import { AISettings } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -11,10 +11,10 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
 
 export default function SettingsScreen() {
@@ -123,25 +123,15 @@ export default function SettingsScreen() {
           <View style={styles.settingSection}>
             <ThemedText style={styles.settingLabel}>Modello AI</ThemedText>
             <ThemedText style={styles.settingDescription}>
-              Seleziona il modello di intelligenza artificiale da utilizzare
+              Inserisci il nome del modello di intelligenza artificiale da utilizzare
             </ThemedText>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedModel}
-                onValueChange={(itemValue) => setSelectedModel(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="#00D4FF"
-              >
-                {AVAILABLE_MODELS.map((model) => (
-                  <Picker.Item
-                    key={model.value}
-                    label={model.label}
-                    value={model.value}
-                    color="#FFFFFF"
-                  />
-                ))}
-              </Picker>
-            </View>
+            <TextInput
+              style={styles.textInput}
+              value={selectedModel}
+              onChangeText={setSelectedModel}
+              placeholder="es. openai/gpt-4"
+              placeholderTextColor="#8B92A0"
+            />
           </View>
 
           {/* Temperature Slider */}
@@ -284,15 +274,14 @@ const styles = StyleSheet.create({
     color: '#8B92A0',
     marginBottom: 12,
   },
-  pickerContainer: {
+  textInput: {
     backgroundColor: '#0F1F3A',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#2A3952',
-    overflow: 'hidden',
-  },
-  picker: {
     color: '#FFFFFF',
+    fontSize: 16,
+    padding: 14,
     height: 50,
   },
   temperatureHeader: {
