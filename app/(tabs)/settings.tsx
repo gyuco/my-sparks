@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/use-auth';
+import { useAlert } from '@/lib/alert-service';
 import { settingsService } from '@/lib/appwrite-service';
 import { AISettings } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +9,6 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -18,6 +18,7 @@ import {
 
 export default function SettingsScreen() {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { showAlert } = useAlert();
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,11 +42,14 @@ export default function SettingsScreen() {
       setTemperature(userSettings.temperature);
     } catch (error) {
       console.error('Errore nel caricamento delle impostazioni:', error);
-      Alert.alert('Errore', 'Impossibile caricare le impostazioni');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile caricare le impostazioni',
+      });
     } finally {
       setLoadingSettings(false);
     }
-  }, [user]);
+  }, [user, showAlert]);
 
   useEffect(() => {
     if (user) {
@@ -63,10 +67,16 @@ export default function SettingsScreen() {
         selectedModel,
         temperature
       );
-      Alert.alert('Successo', 'Impostazioni salvate con successo!');
+      showAlert({
+        title: 'Successo',
+        message: 'Impostazioni salvate con successo!',
+      });
     } catch (error) {
       console.error('Errore nel salvataggio delle impostazioni:', error);
-      Alert.alert('Errore', 'Impossibile salvare le impostazioni');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile salvare le impostazioni',
+      });
     } finally {
       setSaving(false);
     }

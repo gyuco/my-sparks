@@ -1,13 +1,13 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { VoiceInputButton } from '@/components/voice-input-button';
+import { useAlert } from '@/lib/alert-service';
 import { sparksService } from '@/lib/appwrite-service';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Linking,
     Modal,
@@ -22,6 +22,7 @@ import {
 
 export default function SparkDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { showAlert } = useAlert();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +41,10 @@ export default function SparkDetailScreen() {
       setContent(spark.content);
     } catch (error) {
       console.error('Errore nel caricamento della spark:', error);
-      Alert.alert('Errore', 'Impossibile caricare la spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile caricare la spark',
+      });
       router.back();
     } finally {
       setIsLoading(false);
@@ -53,12 +57,18 @@ export default function SparkDetailScreen() {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Errore', 'Il titolo non può essere vuoto');
+      showAlert({
+        title: 'Errore',
+        message: 'Il titolo non può essere vuoto',
+      });
       return;
     }
 
     if (!content.trim()) {
-      Alert.alert('Errore', 'Il contenuto non può essere vuoto');
+      showAlert({
+        title: 'Errore',
+        message: 'Il contenuto non può essere vuoto',
+      });
       return;
     }
 
@@ -70,7 +80,10 @@ export default function SparkDetailScreen() {
       // La lista si aggiornerà automaticamente quando si torna alla dashboard
     } catch (error) {
       console.error('Errore nel salvataggio della spark:', error);
-      Alert.alert('Errore', 'Impossibile salvare le modifiche');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile salvare le modifiche',
+      });
       setIsSaving(false);
     }
   };
@@ -87,7 +100,10 @@ export default function SparkDetailScreen() {
       router.back();
     } catch (error) {
       console.error('Errore nell\'eliminazione della spark:', error);
-      Alert.alert('Errore', 'Impossibile eliminare la spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile eliminare la spark',
+      });
       setIsDeleting(false);
     }
   };
@@ -108,7 +124,10 @@ export default function SparkDetailScreen() {
                 onPress={() => {
                   Linking.openURL(part).catch(err => {
                     console.error('Errore apertura link:', err);
-                    Alert.alert('Errore', 'Impossibile aprire il link');
+                    showAlert({
+                      title: 'Errore',
+                      message: 'Impossibile aprire il link',
+                    });
                   });
                 }}
               >

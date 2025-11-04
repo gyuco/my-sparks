@@ -3,6 +3,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { VoiceInputButton } from '@/components/voice-input-button';
 import { useAuth } from '@/hooks/use-auth';
+import { useAlert } from '@/lib/alert-service';
 import { aiService, settingsService, sparksService } from '@/lib/appwrite-service';
 import { AISettings, DEFAULT_AI_SETTINGS } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +11,6 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -23,6 +23,7 @@ import {
 
 export default function CreateSparkScreen() {
   const { user } = useAuth();
+  const { showAlert } = useAlert();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,17 +133,26 @@ export default function CreateSparkScreen() {
 
   const handleCreateSpark = async () => {
     if (!title.trim()) {
-      Alert.alert('Errore', 'Inserisci un titolo per la tua spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Inserisci un titolo per la tua spark',
+      });
       return;
     }
 
     if (!content.trim()) {
-      Alert.alert('Errore', 'Inserisci il contenuto della tua spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Inserisci il contenuto della tua spark',
+      });
       return;
     }
 
     if (!user) {
-      Alert.alert('Errore', 'Devi essere loggato per creare una spark');
+      showAlert({
+        title: 'Errore',
+        message: 'Devi essere loggato per creare una spark',
+      });
       return;
     }
 
@@ -153,7 +163,10 @@ export default function CreateSparkScreen() {
       router.back();
     } catch (error) {
       console.error('Errore nella creazione della spark:', error);
-      Alert.alert('Errore', 'Impossibile creare la spark. Riprova.');
+      showAlert({
+        title: 'Errore',
+        message: 'Impossibile creare la spark. Riprova.',
+      });
       setIsSubmitting(false);
     }
   };
