@@ -139,3 +139,5 @@ My Sparks è un'applicazione mobile progettata per aiutare gli utenti a catturar
     - Vengono utilizzati indicatori di caricamento (loading spinners) durante le operazioni di rete (es. login, caricamento sparks).
     - Vengono mostrati messaggi di conferma o di errore (tramite popup o alert) per le azioni critiche (es. creazione spark, errori di rete).
     - L'uso di feedback aptico (vibrazione) migliora l'esperienza su determinate interazioni (es. pressione di pulsanti importanti).
+
+algo1
